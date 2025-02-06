@@ -1,5 +1,5 @@
 <!-- Pesanan -->
- <div id="pesanan" class="pesanan">
+<div id="pesanan" class="pesanan">
  	<div class="container">
  		<div class="row mt-5">
 			<div class="col-lg-9 pr-5">
@@ -19,7 +19,7 @@
 						      <div class="card-body">
 						        <div class="row">
 						        	<div class="col-lg-2">
-						        		<img src="<?= base_url('assets/img/menu/') . $p['image']; ?>" class="card-img">
+						        		<img src="<?= base_url('assets/img/menu/') . $p['gambar']; ?>" class="card-img">
 						        	</div>
 						        	<div class="col-lg-3 d-flex align-items-center">
 						        		<div class="item">

@@ -3,102 +3,117 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Menu extends CI_Controller {
 
-	public function __construct()
-	{
-		parent::__construct();
-		$pesanan = $this->db->get_where('pesanan', ['lunas' => 0])->result_array();
-		$this->data['notif_pesanan'] = 0;
-		foreach ($pesanan as $p) {
-			$this->data['notif_pesanan'] += $p['quantity'];
-		}
-	}
+    public function __construct()
+    {
+        parent::__construct();
+        $this->load->library('session'); // ✅ Load session
+        $this->load->model('Menu_model'); // ✅ Load model jika digunakan
 
-	public function index()
-	{
-		$data = $this->data;
-		$data['title'] = 'Menu';
+        // Hitung notifikasi pesanan belum lunas
+        $pesanan = $this->db->get_where('pesanan', ['lunas' => 0])->result_array();
+        $this->data['notif_pesanan'] = 0;
 
-		$totalMenu = $this->db->get('menu')->num_rows();
+        if (!empty($pesanan)) {
+            foreach ($pesanan as $p) {
+                $this->data['notif_pesanan'] += $p['quantity'];
+            }
+        }
+    }
 
-		$this->load->library('pagination');
+    public function index()
+    {
+        $data = $this->data;
+        $data['title'] = 'Menu';
 
-		$config['base_url'] = 'http://localhost/ci-coffee-shop/menu/index';
-		$config['total_rows'] = $totalMenu;
-		$config['per_page'] = 4;
+        // Hitung total menu
+        $totalMenu = $this->db->get('menu')->num_rows();
 
-		$config['full_tag_open'] = '<nav aria-label="Page navigation example"><ul class="pagination">';
-		$config['full_tag_close'] = '</ul></nav>';
+        // Konfigurasi pagination
+        $this->load->library('pagination');
+        $config['base_url'] = site_url('menu/index');
+        $config['total_rows'] = $totalMenu;
+        $config['per_page'] = 4;
 
-		$config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
-		$config['cur_tag_close'] = '</a></li>';
+        // Styling pagination
+        $config['full_tag_open'] = '<nav><ul class="pagination">';
+        $config['full_tag_close'] = '</ul></nav>';
+        $config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
+        $config['cur_tag_close'] = '</a></li>';
+        $config['num_tag_open'] = '<li class="page-item">';
+        $config['num_tag_close'] = '</li>';
+        $config['next_link'] = '&raquo;';
+        $config['next_tag_open'] = '<li class="page-item">';
+        $config['next_tag_close'] = '</li>';
+        $config['prev_link'] = '&laquo;';
+        $config['prev_tag_open'] = '<li class="page-item">';
+        $config['prev_tag_close'] = '</li>';
+        $config['attributes'] = array('class' => 'page-link');
 
-		$config['num_tag_open'] = '<li class="page-item">';
-		$config['num_tag_close'] = '</li>';
+        $this->pagination->initialize($config);
 
-		$config['next_link'] = '&raquo;';
-		$config['next_tag_open'] = '<li class="page-item">';
-		$config['next_tag_close'] = '</li>';
+        // Ambil data menu dengan pagination
+        $start = $this->uri->segment(3) ? $this->uri->segment(3) : 0;
+        $data['menu'] = $this->Menu_model->getAllMenu($config['per_page'], $start);
 
-		$config['prev_link'] = '&laquo;';
-		$config['prev_tag_open'] = '<li class="page-item">';
-		$config['prev_tag_close'] = '</li>';
+        // Load view
+        $this->load->view('layouts/_header', $data);
+        $this->load->view('menu/index', $data);
+        $this->load->view('layouts/_footer');
+    }
 
-		$config['attributes'] = array('class' => 'page-link');
+    public function pesan($menu_id)
+    {
+        // ✅ Validasi menu ID
+        $menu = $this->db->get_where('menu', ['id' => $menu_id])->row_array();
+        if (!$menu) {
+            show_error('Menu tidak ditemukan!', 404);
+        }
 
-		$this->pagination->initialize($config);
+        $harga = $menu['harga'];
 
-		$start = $this->uri->segment(3);
-		$data['menu'] = $this->db->get('menu', $config['per_page'], $start)->result_array();
+        // ✅ Buat nomor pesanan secara otomatis
+        $this->db->order_by('created_at', 'DESC');
+        $this->db->limit(1);
+        $last_order = $this->db->get('pesanan')->row_array();
+        
+        $today = date('Ymd'); // Format: 20240203
+        if ($last_order) {
+            $last_no = intval(substr($last_order['no_pesanan'], -3)); // Ambil angka terakhir
+            $next_no = str_pad($last_no + 1, 3, '0', STR_PAD_LEFT); // Formatkan jadi 001, 002, dst
+        } else {
+            $next_no = '001';
+        }
+        
+        $no_pesanan = "ORD" . $today . $next_no; // Contoh: ORD20240203001
 
-		$this->load->view('layouts/_header', $data);
-		$this->load->view('menu/index');
-		$this->load->view('layouts/_footer');
-	}
+        // ✅ Periksa apakah menu sudah ada di pesanan
+        $pesananSudahAda = $this->db->get_where('pesanan', ['menu_id' => $menu_id, 'lunas' => 0])->row_array();
 
-	public function pesan($menu_id)
-	{
-		$menu = $this->db->get_where('menu', ['id' => $menu_id])->row_array();
-		$harga = $menu['harga'];
+        if ($pesananSudahAda) {
+            // ✅ Update pesanan jika menu sudah ada
+            $data = [
+                'quantity' => $pesananSudahAda['quantity'] + 1,
+                'subtotal' => $pesananSudahAda['subtotal'] + $harga
+            ];
 
-		$this->db->order_by('no_pesanan', 'DESC');
-		$this->db->limit(1);
-		$pesanan = $this->db->get_where('pesanan', ['lunas' => 1])->row_array();
-		$no_pesanan = $pesanan['no_pesanan'];
+            $this->db->where('menu_id', $menu_id);
+            $this->db->where('lunas', 0);
+            $this->db->update('pesanan', $data);
+        } else {
+            // ✅ Tambahkan menu baru ke pesanan
+            $data = [
+                'no_pesanan' => $no_pesanan,
+                'menu_id'    => $menu_id,
+                'quantity'   => 1,
+                'subtotal'   => $harga,
+                'lunas'      => 0
+            ];
 
-		$pesananSudahAda = $this->db->get_where('pesanan', ['menu_id' => $menu_id,'lunas' => 0])->row_array();
-		$menuIdSudahAda = $pesananSudahAda['menu_id'];
+            $this->db->insert('pesanan', $data);
+        }
 
-		if ( $no_pesanan ) {
-			$no_pesanan = $no_pesanan + 1;
-		} else {
-			$no_pesanan = 1;
-		}
-
-		if ($menu_id == $menuIdSudahAda) {
-			$data = [
-				'no_pesanan'=> $pesananSudahAda['no_pesanan'],
-				'menu_id'		=> $pesananSudahAda['menu_id'],
-				'quantity'	=> $pesananSudahAda['quantity'] + 1,
-				'subtotal'	=> $pesananSudahAda['subtotal'] + $harga,
-				'lunas'			=> 0
-			];
-
-			$this->db->where('menu_id', $menu_id);
-			$this->db->where('lunas', 0);
-			$this->db->update('pesanan', $data);
-		} else {
-			$data = [
-				'no_pesanan'=> $no_pesanan,
-				'menu_id'		=> $menu_id,
-				'quantity'	=> 1,
-				'subtotal'	=> $harga,
-				'lunas'			=> 0
-			];
-
-			$this->db->insert('pesanan', $data);
-		}
-
-		redirect('menu');
-	}
-
+        // ✅ Redirect ke halaman menu dengan pesan sukses
+        $this->session->set_flashdata('success', 'Menu berhasil ditambahkan ke pesanan!');
+        redirect('menu');
+    }
 }

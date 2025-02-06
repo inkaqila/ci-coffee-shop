@@ -17,38 +17,29 @@
     <!-- My CSS -->
     <link rel="stylesheet" href="<?= base_url('assets/css/style.css'); ?>">
 
-    <title><?= $title; ?></title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <title><?= htmlspecialchars($title); ?></title>
   </head>
   <body>
     
     <!-- Navbar -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
-          <a class="navbar-brand" href="<?= base_url(); ?>">Coffee Shop</a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
-            <div class="navbar-nav">
-              <?php if ($title == 'Coffee Shop') : ?>
-                <a class="nav-item nav-link active mr-3" href="<?= base_url(); ?>">Home</a>
-              <?php else : ?>
-                <a class="nav-item nav-link mr-3" href="<?= base_url(); ?>">Home</a>
-              <?php endif; ?>
-
-              <?php if ($title == 'Menu') : ?>
-                <a class="nav-item nav-link active mr-3" href="<?= base_url('menu'); ?>">Menu</a>
-              <?php else : ?>
-                <a class="nav-item nav-link mr-3" href="<?= base_url('menu'); ?>">Menu</a>
-              <?php endif; ?>
-
-              <?php if ($title == 'Pesanan') : ?>
-              <a class="nav-item nav-link active" href="<?= base_url('pesanan'); ?>">Pesanan (<span><?= $notif_pesanan; ?></span>)</a>
-              <?php else : ?>
-              <a class="nav-item nav-link" href="<?= base_url('pesanan'); ?>">Pesanan (<span><?= $notif_pesanan; ?></span>)</a>
-              <?php endif; ?>              
-            </div>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="container">
+        <a class="navbar-brand" href="<?= base_url(); ?>">Coffein</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
+          <div class="navbar-nav">
+            <a class="nav-item nav-link <?= $title === 'Coffein' ? 'active' : ''; ?>" href="<?= base_url(); ?>">Home</a>
+            <a class="nav-item nav-link <?= $title === 'Menu' ? 'active' : ''; ?>" href="<?= base_url('menu'); ?>">Menu</a>
+            <a class="nav-item nav-link <?= $title === 'Pesanan' ? 'active' : ''; ?>" href="<?= base_url('pesanan'); ?>">Pesanan (<span><?= htmlspecialchars($notif_pesanan); ?></span>)</a>
           </div>
         </div>
-      </nav>
+      </div>
+    </nav>
+
+    
+
     <!-- End Navbar -->
